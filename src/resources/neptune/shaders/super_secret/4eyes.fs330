@@ -1,0 +1,72 @@
+#version 330
+
+// Input vertex attributes (from vertex shader)
+in vec2 fragTexCoord;
+in vec4 fragColor;
+
+// Input uniform values
+uniform sampler2D texture0;
+uniform vec4 colDiffuse;
+
+// Output fragment color
+out vec4 finalColor;
+
+// Render size values must be passed from code
+const float renderWidth = 800.0;
+const float renderHeight = 450.0;
+
+// Gaussian weights
+const float weight[41] = float[](
+    0.005625706330380201, 0.006836982710075885, 
+    0.008226383671597528, 0.009799648425192237, 
+    0.01155763791846264, 0.013495367927063368, 
+    0.01560117933901118, 0.01785612363276002, 
+    0.020233638872232017, 0.022699581996180128, 
+    0.02521266657379661, 0.02772533205921734, 
+    0.03018504219275018, 0.0325359785733493, 
+    0.03472106315172044, 0.03668421340450537, 
+    0.03837270923994941, 0.03973953396892903,
+    0.0407455450609371, 0.041361335116245734, 
+    0.04156865967128859, 0.041361335116245734, 
+    0.0407455450609371, 0.03973953396892903, 
+    0.03837270923994941, 0.03668421340450537, 
+    0.03472106315172044, 0.0325359785733493, 
+    0.03018504219275018, 0.02772533205921734, 
+    0.02521266657379661, 0.022699581996180128, 
+    0.020233638872232017, 0.01785612363276002, 
+    0.01560117933901118, 0.013495367927063368, 
+    0.01155763791846264, 0.009799648425192237, 
+    0.008226383671597528, 0.006836982710075885, 
+    0.005625706330380201
+);
+
+void main()
+{
+    vec2 tex_offset = vec2(1.0 / renderWidth, 1.0 / renderHeight); // size of a single texel
+    vec3 result = texture(texture0, fragTexCoord).rgb * weight[0]; // center pixel
+
+    // Horizontal blur
+    for (int i = 1; i < 20; i++)
+    {
+        result += texture(texture0, fragTexCoord + vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i];
+        result += texture(texture0, fragTexCoord - vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i];
+    }
+
+    vec3 horizontalBlur = result;
+
+    result = texture(texture0, fragTexCoord).rgb * weight[0]; // center pixel for vertical blur
+
+    // Vertical blur
+    for (int i = 1; i < 20; i++)
+    {
+        result += texture(texture0, fragTexCoord + vec2(0.0, tex_offset.y * float(i))).rgb * weight[i];
+        result += texture(texture0, fragTexCoord - vec2(0.0, tex_offset.y * float(i))).rgb * weight[i];
+    }
+
+    vec3 verticalBlur = result;
+
+    // Combine the horizontal and vertical blur, averaging them
+    vec3 blurColor = (horizontalBlur + verticalBlur) / 2.0;
+
+    finalColor = vec4(blurColor, 1.0);
+}

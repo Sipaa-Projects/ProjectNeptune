@@ -1,0 +1,7 @@
+.cache/
+.neptune/
+bin/
+obj/
+compile_commands.json
+imgui.ini
+screenshot*
